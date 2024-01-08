@@ -1,0 +1,32 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'Azure for Students(dd159ed8-ec35-4c43-a350-81fd38bb245b)'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      docker build -t myacrakuyoub.azurecr.io/web-game:tag 2048-game
+      az acr login -n myacrakuyoub
+      docker push myacrakuyoub.azurecr.io/web-game:tag
+- script: cat 01_kubernetes_aks/app-deploy.yaml
+- task: Kubernetes@1
+  inputs:
+    connectionType: 'Azure Resource Manager'
+    azureSubscriptionEndpoint: 'Azure for Students(dd159ed8-ec35-4c43-a350-81fd38bb245b)'
+    azureResourceGroup: 'aks_tf_rg'
+    kubernetesCluster: 'my-aks-cluster'
+    namespace: 'default'
+    command: 'apply'
+    useConfigurationFile: true
+    configuration: '01_kubernetes_aks'
+    secretType: 'dockerRegistry'
+    containerRegistryType: 'Azure Container Registry'
+    azureSubscriptionEndpointForSecrets: 'Azure for Students(dd159ed8-ec35-4c43-a350-81fd38bb245b)'
+    azureContainerRegistry: 'oukchiren.azurecr.io'
+    forceUpdate: false
